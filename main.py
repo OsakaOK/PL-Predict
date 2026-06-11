@@ -20,6 +20,9 @@ from pl_predict.config import (
 from pl_predict.features import clean_matches, compute_team_stats
 from pl_predict.fetch import fetch_season
 from pl_predict.model import build_training_data, predict_table, train_model
+from pl_predict.report import write_html
+
+_PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 
 
 def main():
@@ -48,6 +51,10 @@ def main():
     out_path = os.path.join(CACHE_DIR, "prediction_2026_2027.csv")
     out.to_csv(out_path, index=False)
     print(f"Saved predictions to {out_path}")
+
+    html_path = os.path.join(_PROJECT_ROOT, "index.html")
+    write_html(table, metrics, html_path)
+    print(f"Saved webpage to {html_path}")
 
 
 if __name__ == "__main__":
