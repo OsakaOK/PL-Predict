@@ -1,66 +1,54 @@
-# fetching data
-import requests
+"""PL-Predict — predict the Premier League 2026-2027 table from 2025-2026 data.
 
-# Set up your API URL and headers
-url = "https://api.football-data.org/v4/competitions/PL/matches?season=2023"
-headers = {"X-Auth-Token": "ae9f6015497f4eb79283f9b20d9cf471"}
+Pipeline (see the `pl_predict` package for each stage):
+  1. fetch    — finished matches per season, cached locally.
+  2. features — per-team season stats (points, goals, form, rank).
+  3. model    — train on season-N -> season-N+1 transitions, then predict.
 
-# Make the request
-response = requests.get(url, headers=headers)
+Note: the free API tier exposes no lower-division data, so promoted teams are
+unknown. Predictions cover the teams continuing from 2025-2026 into 2026-2027.
+"""
 
-# Check if the request was successful
-if response.status_code == 200:
-    data = response.json()  # The data will be in JSON format
-    # print(data)  # Print it to inspect the structure
-else:
-    print(f"Error fetching data: {response.status_code}")
+import os
 
-# debugging
-# # Inspect the structure of the raw data
-# import json
-
-# # print the raw data to better understand the structure
-# print(json.dumps(data, indent=4))
-
-# cleaning data
-import pandas as pd
-
-# Assuming 'data' contains the raw API data
-matches = pd.DataFrame(data["matches"])
-
-# Select relevant columns
-matches_cleaned = matches[
-    ["utcDate", "homeTeam", "awayTeam", "score", "status", "matchday"]
-].copy()
-
-# Rename columns for readability
-matches_cleaned.rename(
-    columns={"utcDate": "date", "matchday": "matchday"}, inplace=True
+from pl_predict.config import (
+    CACHE_DIR,
+    LAST_COMPLETED_SEASON,
+    PREDICT_SEASON_LABEL,
+    SEASONS,
 )
+from pl_predict.features import clean_matches, compute_team_stats
+from pl_predict.fetch import fetch_season
+from pl_predict.model import build_training_data, predict_table, train_model
 
-# Extract team names from 'homeTeam' and 'awayTeam'
-matches_cleaned["home_team"] = matches_cleaned["homeTeam"].apply(lambda x: x["name"])
-matches_cleaned["away_team"] = matches_cleaned["awayTeam"].apply(lambda x: x["name"])
 
-# Extract full-time scores from the 'score' column (nested)
-matches_cleaned["home_score"] = matches_cleaned["score"].apply(
-    lambda x: x["fullTime"]["home"]
-)
-matches_cleaned["away_score"] = matches_cleaned["score"].apply(
-    lambda x: x["fullTime"]["away"]
-)
+def main():
+    stats_by_season = {
+        s: compute_team_stats(clean_matches(fetch_season(s))) for s in SEASONS
+    }
 
-# Extract the winner (home, away, or draw)
-matches_cleaned["winner"] = matches_cleaned["score"].apply(lambda x: x["winner"])
+    train = build_training_data(stats_by_season)
+    model, metrics = train_model(train)
 
-# Drop the original 'score', 'homeTeam', and 'awayTeam' columns
-matches_cleaned.drop(columns=["score", "homeTeam", "awayTeam"], inplace=True)
+    print("Model trained on season-to-season transitions")
+    print(f"  training rows : {metrics['rows']} (teams that stayed up across seasons)")
+    print(f"  LOO-CV MAE    : {metrics['mae']:.2f} points")
+    print(f"  LOO-CV R^2    : {metrics['r2']:.3f}")
 
-# Convert 'date' column to datetime format
-matches_cleaned["date"] = pd.to_datetime(matches_cleaned["date"])
+    table = predict_table(model, stats_by_season[LAST_COMPLETED_SEASON])
 
-# Handle missing values (if any)
-matches_cleaned.fillna(0, inplace=True)
+    print(f"\nPredicted {PREDICT_SEASON_LABEL} table "
+          f"(continuing teams only — promoted clubs unknown):\n")
+    out = table[["predicted_rank", "team", "predicted_points", "label"]]
+    out = out.assign(predicted_points=out["predicted_points"].round(1))
+    print(out.to_string(index=False))
 
-# Preview the cleaned data
-print(matches_cleaned.head())
+    print(f"\nPredicted {PREDICT_SEASON_LABEL} champion: {table.loc[0, 'team']}")
+
+    out_path = os.path.join(CACHE_DIR, "prediction_2026_2027.csv")
+    out.to_csv(out_path, index=False)
+    print(f"Saved predictions to {out_path}")
+
+
+if __name__ == "__main__":
+    main()
