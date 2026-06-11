@@ -3,6 +3,13 @@
 Predict the **English Premier League 2026-2027** table — Champion, Top 4, and
 Relegation spots — from **2025-2026** season data, using machine learning.
 
+### 👉 View the prediction: **https://osakaok.github.io/PL-Predict/**
+
+No install needed — just open the link. The rest of this README is for running
+the model yourself.
+
+---
+
 ## How it works
 
 `main.py` runs a small end-to-end pipeline:
@@ -39,4 +46,17 @@ python main.py
 ```
 
 The first run fetches and caches data in `data/`; later runs reuse the cache.
-Predictions are printed and written to `data/prediction_2026_2027.csv`.
+Predictions are printed and written to `data/prediction_2026_2027.csv`, and a
+shareable webpage is written to `index.html`.
+
+## Publishing updates to the live site
+
+The live page is just the committed `index.html`, served by GitHub Pages from the
+`main` branch. To refresh it:
+
+```bash
+python main.py          # regenerates index.html
+git add index.html && git commit -m "Update prediction" && git push
+```
+
+GitHub rebuilds the page automatically within a minute.
