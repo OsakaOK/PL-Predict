@@ -27,6 +27,9 @@ package, one module per pipeline stage:
 - [pl_predict/simulate.py](pl_predict/simulate.py) — Monte Carlo probabilities
   from empirical residuals.
 - [pl_predict/report.py](pl_predict/report.py) — standalone HTML page.
+- [experiments/feature_sweep.py](experiments/feature_sweep.py) — Phase 3
+  harness: re-judges candidate features/alphas on the gate (not part of the
+  pipeline; run it when considering a model change).
 
 Imports are absolute (`from pl_predict.fetch import ...`), so run from the project
 root with `python main.py`.
@@ -176,13 +179,36 @@ count if they move the evaluation scoreboard.
   joins against the org source — only the feature columns are shared. A test
   asserts both sources yield identical stats for the shared season.
 
-### Phase 3 — candidate next steps (judge each on the scoreboard)
+### Phase 3 — feature experiments (RUN 2026-07; verdict: keep current model)
 
-- Feature experiments are now measurable (510 rows): e.g. season-half splits,
-  home/away splits, squad-continuity proxies. Re-check collinearity each time.
-- Champion accuracy (deferred from Phase 1) — with 30 transitions, champion
-  hit rate is now a usable diagnostic, though still noisy.
-- Every change is judged on the scoreboard; keep only what beats the baselines.
+Eleven candidate feature sets and an alpha sweep were judged on the gate
+(same LOO-CV split, primary = Spearman + top-4 vs the *current* model):
+
+- **No candidate adopted.** The best, `base + momentum` (2nd-half minus
+  1st-half points), edged Spearman 0.694 vs 0.688 but won only 18 of 28
+  seasons in a paired per-season test (sign-test p=0.185 — not
+  distinguishable from luck) and worsened champion hit. Adopting on that
+  evidence would be the overclaiming the gate exists to prevent.
+- `gd only` and `points+gd` (dropping recent_form) lose more seasons than
+  they win; the kitchen sink underperforms base — the collinearity warning
+  above still holds even at 510 rows. Alpha is flat around 5.0.
+- **Adopted from this phase:** `champion_hit_rate` as a scoreboard
+  *diagnostic* (currently 0.43 for the model vs 0.37 persistence) — never a
+  decision criterion; top-1 over 30 transitions is a coin-flip-per-season.
+- **Momentum is the candidate to retest** when more transitions accumulate
+  (one per July) or with a stronger significance protocol.
+- A positive validation fell out too: `points only` is *significantly* worse
+  (7-23 seasons, p=0.005), so `goal_difference` and `recent_form` do earn
+  their places.
+
+### Judging future changes
+
+- Every change is judged on the scoreboard; keep only what beats the current
+  model on Spearman + top-4, and check the win is consistent across seasons
+  (paired per-season comparison), not just on the pooled average.
+- The whole protocol is automated in
+  [experiments/feature_sweep.py](experiments/feature_sweep.py) — add the
+  candidate there and run `python3 experiments/feature_sweep.py`.
 
 ## Conventions
 

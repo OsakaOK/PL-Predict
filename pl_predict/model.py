@@ -79,6 +79,19 @@ def _mean_top4_hit_rate(train, pred):
     return float(np.mean(hits))
 
 
+def _champion_hit_rate(train, pred):
+    """How often the top-predicted team actually tops the next season.
+
+    Diagnostic only, never a decision criterion: a top-1 accuracy over ~30
+    transitions is still noisy (each season is a single coin flip).
+    """
+    hits = []
+    for _, grp in train.groupby("from_season"):
+        best = pd.Series(pred[grp.index], index=grp.index).idxmax()
+        hits.append(float(grp.loc[best, "next_points"] == grp["next_points"].max()))
+    return float(np.mean(hits))
+
+
 def evaluate_predictors(train):
     """Score the model against naive baselines under the same LOO-CV split.
 
@@ -90,7 +103,8 @@ def evaluate_predictors(train):
 
     Primary criteria are rank-based (Spearman, top-4 hit rate) because the
     product is a table, not a points estimate. The model must win those to
-    justify itself over persistence.
+    justify itself over persistence. champion_hit_rate is a diagnostic, not
+    a criterion (top-1 over ~30 transitions is too noisy to decide on).
     """
     X, y = train[FEATURES], train["next_points"]
     loo = LeaveOneOut()
@@ -112,6 +126,8 @@ def evaluate_predictors(train):
                 "predictor": name,
                 "spearman": np.nan if constant else _mean_spearman(train, pred),
                 "top4_hit_rate": np.nan if constant else _mean_top4_hit_rate(train, pred),
+                "champion_hit_rate": np.nan if constant
+                else _champion_hit_rate(train, pred),
                 "mae": mean_absolute_error(y, pred),
                 "r2": r2_score(y, pred),
             }

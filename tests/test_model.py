@@ -65,7 +65,7 @@ def test_evaluate_predictors_scoreboard_shape():
         "mean", "persistence", "regress_to_mean", "ridge_model"
     ]
     assert list(scoreboard.columns) == [
-        "predictor", "spearman", "top4_hit_rate", "mae", "r2"
+        "predictor", "spearman", "top4_hit_rate", "champion_hit_rate", "mae", "r2"
     ]
 
 
@@ -75,6 +75,7 @@ def test_evaluate_predictors_mean_baseline_has_undefined_rank_metrics():
     # A constant predictor has no ranking; naive LOO would report a bogus -1.
     assert np.isnan(mean_row["spearman"])
     assert np.isnan(mean_row["top4_hit_rate"])
+    assert np.isnan(mean_row["champion_hit_rate"])
 
 
 def test_evaluate_predictors_persistence_mae_matches_hand_computation():
@@ -89,6 +90,7 @@ def test_evaluate_predictors_rank_metrics_are_bounded():
     ranked = scoreboard[scoreboard["predictor"] != "mean"]
     assert ranked["spearman"].between(-1, 1).all()
     assert ranked["top4_hit_rate"].between(0, 1).all()
+    assert ranked["champion_hit_rate"].between(0, 1).all()
 
 
 def test_predict_table_ranks_and_labels():
