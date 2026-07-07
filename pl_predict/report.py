@@ -26,16 +26,40 @@ def _rows_html(table):
             f'<td class="rank">{r["predicted_rank"]}</td>'
             f'<td class="team">{r["team"]}</td>'
             f'<td class="pts">{r["predicted_points"]:.1f}</td>'
+            f'<td class="prob">{r["p_top4"]:.0%}</td>'
+            f'<td class="prob">{r["p_relegation"]:.0%}</td>'
             f"<td>{badge}</td>"
             "</tr>"
         )
     return "\n".join(cells)
 
 
-def write_html(table, metrics, path):
+def _baseline_line(scoreboard):
+    """One honest sentence: model vs. persistence on rank correlation.
+
+    Stated whether the model wins or loses — the point of the scoreboard is
+    that the page never overclaims.
+    """
+    by_name = scoreboard.set_index("predictor")
+    model_rho = by_name.loc["ridge_model", "spearman"]
+    persist_rho = by_name.loc["persistence", "spearman"]
+    if model_rho > persist_rho:
+        verdict = "beats"
+    else:
+        verdict = "does <strong>not</strong> beat"
+    return (
+        f"On held-out rank correlation the model {verdict} the naive "
+        f"&ldquo;same as last season&rdquo; baseline "
+        f"(Spearman {model_rho:.2f} vs {persist_rho:.2f})."
+    )
+
+
+def write_html(table, metrics, scoreboard, path):
     """Write a standalone HTML report for the predicted season to `path`."""
     champion = table.loc[0, "team"]
+    p_champion = table.loc[0, "p_champion"]
     generated = datetime.date.today().isoformat()
+    baseline_line = _baseline_line(scoreboard)
     html = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -55,6 +79,7 @@ def write_html(table, metrics, path):
   .champ .lbl {{ color: #9fb0c0; font-size: .8rem; text-transform: uppercase;
                  letter-spacing: .08em; }}
   .champ .name {{ font-size: 1.5rem; font-weight: 700; }}
+  .champ .odds {{ color: #9fb0c0; font-size: .85rem; margin-top: .15rem; }}
   table {{ width: 100%; border-collapse: collapse; font-size: .95rem; }}
   th, td {{ text-align: left; padding: .55rem .6rem;
             border-bottom: 1px solid #ffffff14; }}
@@ -63,6 +88,8 @@ def write_html(table, metrics, path):
   td.rank {{ color: #9fb0c0; width: 2.5rem; }}
   td.team {{ font-weight: 600; }}
   td.pts {{ text-align: right; font-variant-numeric: tabular-nums; width: 5rem; }}
+  td.prob {{ text-align: right; font-variant-numeric: tabular-nums; width: 4rem;
+             color: #9fb0c0; }}
   tr.champion {{ background: #1f6feb1f; }}
   tr.top_4 {{ background: #1f6feb12; }}
   tr.relegation {{ background: #f8514912; }}
@@ -83,11 +110,14 @@ def write_html(table, metrics, path):
   <div class="champ">
     <div class="lbl">Predicted champion</div>
     <div class="name">{champion}</div>
+    <div class="odds">wins {p_champion:.0%} of 10,000 simulated seasons</div>
   </div>
 
   <table>
     <thead>
-      <tr><th>#</th><th>Team</th><th style="text-align:right">Pts</th><th></th></tr>
+      <tr><th>#</th><th>Team</th><th style="text-align:right">Pts</th>
+          <th style="text-align:right">Top 4</th>
+          <th style="text-align:right">Releg.</th><th></th></tr>
     </thead>
     <tbody>
 {_rows_html(table)}
@@ -97,6 +127,10 @@ def write_html(table, metrics, path):
   <footer>
     Model: StandardScaler + Ridge trained on season-to-season transitions
     (leave-one-out CV: MAE {metrics['mae']:.1f} pts, R&sup2; {metrics['r2']:.2f}).
+    {baseline_line}
+    Top-4 / relegation probabilities come from 10,000 seasons simulated by
+    resampling the model's own out-of-sample errors; with so few training
+    seasons they are rough guides, not precise odds.
     Predictions cover teams continuing from 2025-2026; promoted clubs are unknown,
     so the relegation zone shown is the three weakest continuing sides.
   </footer>
