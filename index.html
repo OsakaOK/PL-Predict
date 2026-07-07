@@ -17,6 +17,7 @@
   .champ .lbl { color: #9fb0c0; font-size: .8rem; text-transform: uppercase;
                  letter-spacing: .08em; }
   .champ .name { font-size: 1.5rem; font-weight: 700; }
+  .champ .odds { color: #9fb0c0; font-size: .85rem; margin-top: .15rem; }
   table { width: 100%; border-collapse: collapse; font-size: .95rem; }
   th, td { text-align: left; padding: .55rem .6rem;
             border-bottom: 1px solid #ffffff14; }
@@ -25,6 +26,8 @@
   td.rank { color: #9fb0c0; width: 2.5rem; }
   td.team { font-weight: 600; }
   td.pts { text-align: right; font-variant-numeric: tabular-nums; width: 5rem; }
+  td.prob { text-align: right; font-variant-numeric: tabular-nums; width: 4rem;
+             color: #9fb0c0; }
   tr.champion { background: #1f6feb1f; }
   tr.top_4 { background: #1f6feb12; }
   tr.relegation { background: #f8514912; }
@@ -40,44 +43,52 @@
 <body>
 <div class="wrap">
   <h1>Premier League 2026-2027 — Predicted Table</h1>
-  <p class="sub">Predicted from 2025-2026 results · generated 2026-06-11</p>
+  <p class="sub">Predicted from 2025-2026 results · generated 2026-07-07</p>
 
   <div class="champ">
     <div class="lbl">Predicted champion</div>
     <div class="name">Arsenal FC</div>
+    <div class="odds">wins 47% of 10,000 simulated seasons</div>
   </div>
 
   <table>
     <thead>
-      <tr><th>#</th><th>Team</th><th style="text-align:right">Pts</th><th></th></tr>
+      <tr><th>#</th><th>Team</th><th style="text-align:right">Pts</th>
+          <th style="text-align:right">Top 4</th>
+          <th style="text-align:right">Releg.</th><th></th></tr>
     </thead>
     <tbody>
-<tr class="champion"><td class="rank">1</td><td class="team">Arsenal FC</td><td class="pts">71.0</td><td><span class="badge champion">Champion</span></td></tr>
-<tr class="top_4"><td class="rank">2</td><td class="team">Manchester City FC</td><td class="pts">66.1</td><td><span class="badge top_4">Top 4</span></td></tr>
-<tr class="top_4"><td class="rank">3</td><td class="team">Manchester United FC</td><td class="pts">62.4</td><td><span class="badge top_4">Top 4</span></td></tr>
-<tr class="top_4"><td class="rank">4</td><td class="team">Aston Villa FC</td><td class="pts">55.4</td><td><span class="badge top_4">Top 4</span></td></tr>
-<tr class="mid_table"><td class="rank">5</td><td class="team">AFC Bournemouth</td><td class="pts">55.2</td><td></td></tr>
-<tr class="mid_table"><td class="rank">6</td><td class="team">Liverpool FC</td><td class="pts">54.7</td><td></td></tr>
-<tr class="mid_table"><td class="rank">7</td><td class="team">Brighton & Hove Albion FC</td><td class="pts">53.8</td><td></td></tr>
-<tr class="mid_table"><td class="rank">8</td><td class="team">Chelsea FC</td><td class="pts">52.6</td><td></td></tr>
-<tr class="mid_table"><td class="rank">9</td><td class="team">Brentford FC</td><td class="pts">52.4</td><td></td></tr>
-<tr class="mid_table"><td class="rank">10</td><td class="team">Nottingham Forest FC</td><td class="pts">52.0</td><td></td></tr>
-<tr class="mid_table"><td class="rank">11</td><td class="team">Newcastle United FC</td><td class="pts">52.0</td><td></td></tr>
-<tr class="mid_table"><td class="rank">12</td><td class="team">Sunderland AFC</td><td class="pts">51.8</td><td></td></tr>
-<tr class="mid_table"><td class="rank">13</td><td class="team">Fulham FC</td><td class="pts">51.7</td><td></td></tr>
-<tr class="mid_table"><td class="rank">14</td><td class="team">Tottenham Hotspur FC</td><td class="pts">51.4</td><td></td></tr>
-<tr class="mid_table"><td class="rank">15</td><td class="team">Leeds United FC</td><td class="pts">51.1</td><td></td></tr>
-<tr class="mid_table"><td class="rank">16</td><td class="team">Everton FC</td><td class="pts">48.9</td><td></td></tr>
-<tr class="mid_table"><td class="rank">17</td><td class="team">Crystal Palace FC</td><td class="pts">46.8</td><td></td></tr>
-<tr class="relegation"><td class="rank">18</td><td class="team">West Ham United FC</td><td class="pts">46.3</td><td><span class="badge relegation">Relegation</span></td></tr>
-<tr class="relegation"><td class="rank">19</td><td class="team">Burnley FC</td><td class="pts">38.2</td><td><span class="badge relegation">Relegation</span></td></tr>
-<tr class="relegation"><td class="rank">20</td><td class="team">Wolverhampton Wanderers FC</td><td class="pts">37.6</td><td><span class="badge relegation">Relegation</span></td></tr>
+<tr class="champion"><td class="rank">1</td><td class="team">Arsenal FC</td><td class="pts">77.1</td><td class="prob">90%</td><td class="prob">0%</td><td><span class="badge champion">Champion</span></td></tr>
+<tr class="top_4"><td class="rank">2</td><td class="team">Manchester City FC</td><td class="pts">73.8</td><td class="prob">84%</td><td class="prob">0%</td><td><span class="badge top_4">Top 4</span></td></tr>
+<tr class="top_4"><td class="rank">3</td><td class="team">Manchester United FC</td><td class="pts">63.8</td><td class="prob">52%</td><td class="prob">0%</td><td><span class="badge top_4">Top 4</span></td></tr>
+<tr class="top_4"><td class="rank">4</td><td class="team">Liverpool FC</td><td class="pts">56.8</td><td class="prob">26%</td><td class="prob">2%</td><td><span class="badge top_4">Top 4</span></td></tr>
+<tr class="mid_table"><td class="rank">5</td><td class="team">Aston Villa FC</td><td class="pts">56.6</td><td class="prob">24%</td><td class="prob">3%</td><td></td></tr>
+<tr class="mid_table"><td class="rank">6</td><td class="team">AFC Bournemouth</td><td class="pts">54.5</td><td class="prob">18%</td><td class="prob">4%</td><td></td></tr>
+<tr class="mid_table"><td class="rank">7</td><td class="team">Brighton & Hove Albion FC</td><td class="pts">54.2</td><td class="prob">17%</td><td class="prob">4%</td><td></td></tr>
+<tr class="mid_table"><td class="rank">8</td><td class="team">Chelsea FC</td><td class="pts">53.7</td><td class="prob">16%</td><td class="prob">5%</td><td></td></tr>
+<tr class="mid_table"><td class="rank">9</td><td class="team">Brentford FC</td><td class="pts">52.7</td><td class="prob">13%</td><td class="prob">6%</td><td></td></tr>
+<tr class="mid_table"><td class="rank">10</td><td class="team">Newcastle United FC</td><td class="pts">50.3</td><td class="prob">9%</td><td class="prob">8%</td><td></td></tr>
+<tr class="mid_table"><td class="rank">11</td><td class="team">Fulham FC</td><td class="pts">49.9</td><td class="prob">9%</td><td class="prob">9%</td><td></td></tr>
+<tr class="mid_table"><td class="rank">12</td><td class="team">Sunderland AFC</td><td class="pts">49.5</td><td class="prob">8%</td><td class="prob">10%</td><td></td></tr>
+<tr class="mid_table"><td class="rank">13</td><td class="team">Nottingham Forest FC</td><td class="pts">49.3</td><td class="prob">7%</td><td class="prob">10%</td><td></td></tr>
+<tr class="mid_table"><td class="rank">14</td><td class="team">Everton FC</td><td class="pts">48.9</td><td class="prob">7%</td><td class="prob">11%</td><td></td></tr>
+<tr class="mid_table"><td class="rank">15</td><td class="team">Leeds United FC</td><td class="pts">48.0</td><td class="prob">6%</td><td class="prob">13%</td><td></td></tr>
+<tr class="mid_table"><td class="rank">16</td><td class="team">Tottenham Hotspur FC</td><td class="pts">46.6</td><td class="prob">5%</td><td class="prob">16%</td><td></td></tr>
+<tr class="mid_table"><td class="rank">17</td><td class="team">Crystal Palace FC</td><td class="pts">45.3</td><td class="prob">4%</td><td class="prob">19%</td><td></td></tr>
+<tr class="relegation"><td class="rank">18</td><td class="team">West Ham United FC</td><td class="pts">41.3</td><td class="prob">2%</td><td class="prob">31%</td><td><span class="badge relegation">Relegation</span></td></tr>
+<tr class="relegation"><td class="rank">19</td><td class="team">Burnley FC</td><td class="pts">30.2</td><td class="prob">0%</td><td class="prob">72%</td><td><span class="badge relegation">Relegation</span></td></tr>
+<tr class="relegation"><td class="rank">20</td><td class="team">Wolverhampton Wanderers FC</td><td class="pts">28.4</td><td class="prob">0%</td><td class="prob">79%</td><td><span class="badge relegation">Relegation</span></td></tr>
     </tbody>
   </table>
 
   <footer>
-    Model: StandardScaler + Ridge trained on season-to-season transitions
-    (leave-one-out CV: MAE 10.0 pts, R&sup2; 0.25).
+    Model: StandardScaler + Ridge trained on 510 team
+    season-to-season transitions since 1995-96
+    (leave-one-out CV: MAE 8.4 pts, R&sup2; 0.58).
+    On held-out rank correlation the model beats the naive &ldquo;same as last season&rdquo; baseline (Spearman 0.69 vs 0.68).
+    Top-4 / relegation probabilities come from 10,000 seasons simulated by
+    resampling the model's own out-of-sample errors; with so few training
+    seasons they are rough guides, not precise odds.
     Predictions cover teams continuing from 2025-2026; promoted clubs are unknown,
     so the relegation zone shown is the three weakest continuing sides.
   </footer>

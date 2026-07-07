@@ -125,7 +125,8 @@ def write_html(table, metrics, scoreboard, path):
   </table>
 
   <footer>
-    Model: StandardScaler + Ridge trained on season-to-season transitions
+    Model: StandardScaler + Ridge trained on {metrics['rows']} team
+    season-to-season transitions since 1995-96
     (leave-one-out CV: MAE {metrics['mae']:.1f} pts, R&sup2; {metrics['r2']:.2f}).
     {baseline_line}
     Top-4 / relegation probabilities come from 10,000 seasons simulated by

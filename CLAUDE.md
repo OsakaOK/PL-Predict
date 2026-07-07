@@ -15,7 +15,11 @@ package, one module per pipeline stage:
 
 - [pl_predict/config.py](pl_predict/config.py) — constants: API token/URL, cache
   dir, seasons, features.
-- [pl_predict/fetch.py](pl_predict/fetch.py) — `fetch_season` (API call + cache).
+- [pl_predict/fetch.py](pl_predict/fetch.py) — `fetch_season` (org API call +
+  cache; provides the prediction base).
+- [pl_predict/fetch_couk.py](pl_predict/fetch_couk.py) — `fetch_couk_matches`
+  (football-data.co.uk historical CSVs, 1995-96 onward; provides the training
+  data).
 - [pl_predict/features.py](pl_predict/features.py) — `clean_matches`,
   `compute_team_stats` (raw JSON → per-team season stats).
 - [pl_predict/model.py](pl_predict/model.py) — `build_training_data`,
@@ -29,25 +33,32 @@ root with `python main.py`.
 
 ## How it works (pipeline)
 
-1. **`fetch_season(season)`** — Pulls finished matches from the
-   [football-data.org](https://www.football-data.org/) v4 API, cached to
-   `data/matches_<season>.json` so reruns need no network. The free tier exposes
-   seasons **2023, 2024, 2025** (the 2023-24, 2024-25, 2025-26 campaigns).
-2. **`clean_matches(matches)`** — Flattens the nested match JSON into one tidy row
-   per finished match, keyed by stable team **ids** (used for joins) plus display
-   names.
-3. **`compute_team_stats(matches)`** — Builds the full-season table per team:
+Two data sources, never joined against each other:
+
+- **Training** — [football-data.co.uk](https://www.football-data.co.uk/) free
+  CSVs, every season since **1995-96** (the first 20-team/38-game season),
+  cached to `data/couk_E0_<season>.csv`. Team names are the join keys; they are
+  internally consistent across all seasons (audited: 49 clubs, no drift).
+- **Prediction base** — the [football-data.org](https://www.football-data.org/)
+  v4 API's 2025-26 season (stable integer ids, pretty display names), cached to
+  `data/matches_<season>.json`.
+
+1. **`fetch_couk_matches(season)` / `fetch_season(season)`** — Cached fetches;
+   both yield the same tidy one-row-per-finished-match shape (`fetch_season`
+   via `clean_matches`). An integration test asserts both sources produce
+   identical per-team stats for the shared 2025-26 season.
+2. **`compute_team_stats(matches)`** — Builds the full-season table per team:
    wins/draws/losses, goals, `points`, `goal_difference`, `win_percentage`,
    `recent_form` (points from the last 5 matches), and final `rank`.
-4. **`build_training_data(...)`** — Pairs each team's **season-N features** with its
+3. **`build_training_data(...)`** — Pairs each team's **season-N features** with its
    **season-N+1 points** (`next_points`). Only teams present in *both* seasons form
    a training row (an inner join on `team_id`), since relegated/promoted teams have
-   no continuation. This yields ~34 rows from the two available transitions.
-5. **`train_model` + `evaluate_predictors`** — Fits `StandardScaler` + `Ridge`,
+   no continuation. 30 transitions × 17 continuing teams = **510 rows**.
+4. **`train_model` + `evaluate_predictors`** — Fits `StandardScaler` + `Ridge`,
    reports leave-one-out CV metrics, and scores the model against naive
    baselines (see Roadmap) on the same split; the scoreboard prints and saves
    to `data/validation.csv`.
-6. **`predict_table` + `simulate_probabilities`** — Applies the model to 2025-26
+5. **`predict_table` + `simulate_probabilities`** — Applies the model to 2025-26
    stats to predict 2026-27 points, then Monte-Carlo-simulates 10,000 seasons
    from the empirical residuals for champion/top-4/relegation probabilities.
    `main` prints the table and saves `data/prediction_2026_2027.csv` and
@@ -66,15 +77,18 @@ root with `python main.py`.
   reintroduce collinear columns.**
 - **Honest metrics.** Quality is reported via leave-one-out CV
   (`cross_val_predict`), not in-sample fit, and always against the baseline
-  scoreboard. Expect a modest R² (~0.25, MAE ~10 points) — predicting football
-  a season ahead from one season of stats is inherently noisy. Don't "improve"
-  this by reporting in-sample numbers or dropping the baselines.
-- **Promoted-team limitation.** The free tier has no lower-division data, so the 3
-  promoted clubs can't be predicted. Output covers continuing teams only — stated
-  in the README and the printed header. The relegation label here is therefore the
-  3 weakest *continuing* teams, not a true bottom-3.
-- **Joins use `team_id`, not names.** Team display names can vary; ids are stable
-  across seasons. Keep joins on `team_id`.
+  scoreboard. On 510 rows expect Spearman ~0.69, MAE ~8.4, R² ~0.58 — and note
+  persistence alone scores Spearman ~0.68, so the model's edge is real but
+  slim. Don't "improve" this by reporting in-sample numbers or dropping the
+  baselines.
+- **Promoted-team limitation.** Neither free source has usable lower-division
+  data, so the 3 promoted clubs can't be predicted. Output covers continuing
+  teams only — stated in the README and the printed header. The relegation label
+  here is therefore the 3 weakest *continuing* teams, not a true bottom-3.
+- **Joins use `team_id`, not names — within one source.** org ids are stable
+  integers; co.uk "ids" are its team names (audited consistent 1995-2025).
+  Never join the two sources against each other: training and prediction only
+  share feature *columns*, not keys.
 
 ## Running it
 
@@ -111,8 +125,13 @@ the whole pipeline against the cached real seasons and is auto-skipped when
   env var.
 - **Rate limit.** Free tier is ~10 requests/min; `fetch_season` sleeps 6s after a
   live fetch. The cache means this rarely bites.
-- **Adding seasons.** When football-data grants more historical seasons, add them to
-  `SEASONS` — more transitions means more training data and a better model.
+- **Adding seasons.** Each July, bump `LAST_COMPLETED_SEASON` (which also extends
+  `COUK_SEASONS`) and update `PREDICT_SEASON_LABEL`. Don't extend `COUK_SEASONS`
+  before 1995 — earlier seasons had 22 teams / 42 games, a different points scale.
+- **co.uk CSV quirks.** Some seasons are latin-1, some rows have extra trailing
+  betting columns, and the column layout shifts across eras — the parser in
+  [pl_predict/fetch_couk.py](pl_predict/fetch_couk.py) locates fields by header
+  name and must stay tolerant of ragged rows.
 
 ## Roadmap: evaluation gate + measurable accuracy
 
@@ -144,16 +163,26 @@ count if they move the evaluation scoreboard.
    line comparing model vs. persistence on rank — **stated even when the model
    loses**. The gate tells the truth or it isn't a gate.
 
-### Phase 2 — real accuracy (pending; gated by Phase 1 results)
+### Phase 2 — expand training data (DONE, 2026-07)
 
-- The binding constraint is ~34 training rows; feature/model tweaks are
-  unmeasurable at that size. First experiment: **expand training data** with
-  football-data.co.uk free historical CSVs (decades of PL matches → hundreds of
-  transitions).
-- Hard part: that source keys teams by name strings, this pipeline joins on
-  stable `team_id` — a name→id reconciliation table is required.
-- Every change is judged on the Phase 1 scoreboard; keep only what beats the
-  baselines.
+- **Result: the gate flipped.** On the original 34 rows the model *lost* to
+  persistence on rank (Spearman 0.524 vs 0.536). On 510 rows (30 transitions,
+  1995-96 onward, via football-data.co.uk) it wins on every metric:
+  Spearman **0.688 vs 0.677**, top-4 hit rate **0.750 vs 0.742**,
+  MAE **8.38 vs 8.87**, R² **0.58 vs 0.51**. The edge over persistence is real
+  but slim — that's the honest state of season-ahead prediction.
+- The feared name→id reconciliation turned out unnecessary: co.uk names are
+  internally consistent across all 31 seasons (audited), and training never
+  joins against the org source — only the feature columns are shared. A test
+  asserts both sources yield identical stats for the shared season.
+
+### Phase 3 — candidate next steps (judge each on the scoreboard)
+
+- Feature experiments are now measurable (510 rows): e.g. season-half splits,
+  home/away splits, squad-continuity proxies. Re-check collinearity each time.
+- Champion accuracy (deferred from Phase 1) — with 30 transitions, champion
+  hit rate is now a usable diagnostic, though still noisy.
+- Every change is judged on the scoreboard; keep only what beats the baselines.
 
 ## Conventions
 

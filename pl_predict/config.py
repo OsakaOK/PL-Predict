@@ -17,6 +17,11 @@ SEASONS = [2023, 2024, 2025]
 LAST_COMPLETED_SEASON = 2025          # the 2025-2026 season (our prediction base)
 PREDICT_SEASON_LABEL = "2026-2027"
 
+# Historical training source: football-data.co.uk free CSVs. 1995-96 is the
+# first 20-team / 38-game season, so features share one scale throughout.
+COUK_BASE_URL = "https://www.football-data.co.uk/mmz4281/{code}/E0.csv"
+COUK_SEASONS = list(range(1995, LAST_COMPLETED_SEASON + 1))
+
 # Features fed to the model (a season's stats) and the target (next season points).
 # Kept deliberately small and non-redundant: with only a few dozen training rows,
 # adding collinear features (win_percentage, goals_scored) destabilises the fit.
